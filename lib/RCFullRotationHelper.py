@@ -6,12 +6,13 @@ setupComplete = False
 Neutral = 91
 MaxRot = 180
 
-def setup(serialNo):
+def setup(serialNo, isRemote = 0):
     global rcServo0
     global setupComplete
     rcServo0 = RCServo()
     rcServo0.setDeviceSerialNumber(serialNo)
     rcServo0.setChannel(0)
+    rcServo0.setIsRemote(isRemote)
     rcServo0.openWaitForAttachment(5000)
     rcServo0.setTargetPosition(0)
     rcServo0.setEngaged(True)
