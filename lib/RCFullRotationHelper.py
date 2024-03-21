@@ -17,7 +17,12 @@ def setup(serialNo, isRemote = 0):
 def rotate(rcServo0, speed:float):
     if((speed > 1) | (speed < -1)):
         raise ValueError("Speed must be between 1.0 ad -1.0")
+    if (speed < 0.1 and speed > -0.1):
+        speed = 0
     rcServo0.setTargetPosition(Neutral + (MaxRot - Neutral)*speed)
+
+def rotate180(rcServo0, destination):
+    rcServo0.setTargetPosition(int(90+(destination*90)))
 
 def rotClockwise(rcServo0, distance):
     rcServo0.setTargetPosition(90+distance)

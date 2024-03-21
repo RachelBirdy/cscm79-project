@@ -3,11 +3,13 @@ from lib import RCFullRotationHelper as RC
 from lib import TempLEDHelper as LED
 from lib import VoltageInputHelper as VI
 from lib import RFIDHelper as RF
+from Phidget22.Net import *
 import time
 
-RFIDtag = False
+RFIDtag = True
 TempControl = False
 BarrierControl = True
+SwingControl = True
 
 RGBpins = {
     "Red": 7,
@@ -30,29 +32,39 @@ def tagHandler(self, tag, protocol):
         LCD.write(self.lcd, "FAKE BABY ALERT", "")
     return
 
+def swingMove(self, voltageRatio):
+    RC.rotate180(self.motor, (voltageRatio*2)-1)
+
 def barrierMove(self, voltageRatio):
     RC.rotate(self.motor, (voltageRatio*2)-1)
 
 def main():
-    lcd0 = LCD.setup(39830, 0)
+    Net.enableServerDiscovery(PhidgetServerType.PHIDGETSERVER_DEVICEREMOTE)
+    lcd0 = LCD.setup(39830, 1)
 
     if (TempControl):
-        leds = LED.setup(39830, 7, 6, 5)
-        voltage0 = VI.setup(39830, 0)
+        leds = LED.setup(39830, 7, 6, 5, 1)
+        voltage0 = VI.setup(39830, 0, 1)
         voltage0.leds = leds
         voltage0.setVoltageRatioChangeTrigger(0.1)
         voltage0.setOnVoltageRatioChangeHandler(voltChange)
 
     if (RFIDtag):
-        rfid0 = RF.setup(63514, 0)
+        rfid0 = RF.setup(63514, 1)
         rfid0.lcd = lcd0
         rfid0.setOnTagHandler(tagHandler)
 
     if (BarrierControl):
-        barrierMotor0 = RC.setup(14875)
-        voltage1 = VI.setup(39830, 0)
+        barrierMotor0 = RC.setup(14875, 1)
+        voltage1 = VI.setup(39830, 1, 1)
         voltage1.motor = barrierMotor0
         voltage1.setOnVoltageRatioChangeHandler(barrierMove)
+
+    if (SwingControl):
+        swingMotor0 = RC.setup(19875, 1)
+        voltage2 = VI.setup(39830, 0, 1)
+        voltage2.motor = swingMotor0
+        voltage2.setOnVoltageRatioChangeHandler(swingMove)
 
 
     while(True):
