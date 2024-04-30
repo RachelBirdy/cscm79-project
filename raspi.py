@@ -22,16 +22,29 @@ rfid0 = None
 barrierMotor0 = None
 swingMotor0 = None
 
+def voltChange(self, voltageRatio):
+    print(voltageRatio)
+    LED.setDistance((voltageRatio*2)-1,self.leds) 
+
 def onServerAdded(self, server, kv):
     print("Server: " + str(server))
     print("Kv: " + str(kv))
 
 def onNewDevice(self, device):
+    global lcd0, leds, voltage0, rfid0, barrierMotor0, swingMotor0
+    global TempControl, RFIDtag, BarrierControl, SwingControl, LCDConnected
     print("Device: " + str(device))
     if (device.getDeviceSerialNumber() == 39830): LCDConnected = True
     if (device.getDeviceSerialNumber() == 63514): RFIDtag = True
     if (device.getDeviceSerialNumber() == 14875): BarrierControl = True
     if (device.getDeviceSerialNumber() == 19875): SwingControl = True
+    if(LCDConnected == True and lcd0 == None):
+        lcd0 = LCD.setup(39830, 0)
+        leds = LED.setup(39830, 7, 6, 5, 0)
+        voltage0 = VI.setup(39830, 0, 0)
+        voltage0.setVoltageRatioChangeTrigger(0.1)
+        voltage0.setOnVoltageRatioChangeHandler(voltChange)
+
 
 RGBpins = {
     "Red": 7,
