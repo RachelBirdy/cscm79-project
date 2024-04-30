@@ -7,7 +7,7 @@ from Phidget22.Net import *
 import time
 
 RFIDtag = True
-TempControl = False
+TempControl = True
 BarrierControl = True
 SwingControl = True
 
@@ -36,6 +36,8 @@ def swingMove(self, voltageRatio):
     RC.rotate180(self.motor, (voltageRatio*2)-1)
 
 def barrierMove(self, voltageRatio):
+    if (voltageRatio > 0.4 and voltageRatio < 0.6):
+        voltageRatio = 0.5
     RC.rotate(self.motor, (voltageRatio*2)-1)
 
 def main():
@@ -55,14 +57,14 @@ def main():
         rfid0.setOnTagHandler(tagHandler)
 
     if (BarrierControl):
-        barrierMotor0 = RC.setup(14875, 1)
+        barrierMotor0 = RC.setup(19875, 1)
         voltage1 = VI.setup(39830, 1, 1)
         voltage1.motor = barrierMotor0
         voltage1.setOnVoltageRatioChangeHandler(barrierMove)
 
     if (SwingControl):
-        swingMotor0 = RC.setup(19875, 1)
-        voltage2 = VI.setup(39830, 0, 1)
+        swingMotor0 = RC.setup(14875, 1)
+        voltage2 = VI.setup(39830, 2, 1)
         voltage2.motor = swingMotor0
         voltage2.setOnVoltageRatioChangeHandler(swingMove)
 
