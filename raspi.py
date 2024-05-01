@@ -70,20 +70,21 @@ def tagHandler(self, tag, protocol):
     return
 
 def tempHandler(self, voltage):
-    global cribDict
+    global cribDict, leds
     cribDict.set("currentTemperature", str(10 + (voltage * 25)))
     lcdStatus["temperature"] = 10 + (voltage*25)
     LCDupdater()
+    LED.setDistance(float(cribDict.get("currentTemperature"))-float(cribDict.get("targetTemperature")), leds)
 
 def swingHandler(self, voltage):
     global cribDict, swingMotor0
     cribDict.set("swingPosition", str(voltage))
-    RC.rotate180(swingMotor0, (int(voltage)*2)-1)
+    RC.rotate180(swingMotor0, (float(voltage)*2)-1)
 
 def barrierHandler(self, voltage):
     global cribDict, barrierMotor0
     cribDict.set("barrierPosition", str(voltage))
-    RC.rotate180(barrierMotor0, (int(voltage)*2)-1)
+    RC.rotate180(barrierMotor0, (float(voltage)*2)-1)
 
 def wetHandler(self, voltage):
     global cribDict
@@ -108,18 +109,21 @@ def onNewDevice(self, device):
     if(LCDConnected and (lcd0 == None)):
         lcd0 = LCD.setup(39830, 0)
         leds = LED.setup(39830, 7, 6, 5, 0)
-        tempSlider = VI.setup(39830, 0, 0)
+        tempSlider = VI.setup(39830, 5, 0)
         tempSlider.setVoltageRatioChangeTrigger(0.05)
         tempSlider.setOnVoltageRatioChangeHandler(tempHandler)
         swingJoystick = VI.setup(39830, 1, 0)
         swingJoystick.setVoltageRatioChangeTrigger(0.05)
         swingJoystick.setOnVoltageRatioChangeHandler(swingHandler)
-        wetSlider = VI.setup(39830, 3, 0)
+        wetSlider = VI.setup(39830, 4, 0)
         wetSlider.setVoltageRatioChangeTrigger(0.1)
         wetSlider.setOnVoltageRatioChangeHandler(wetHandler)
         volumePot = VI.setup(39830, 2, 0)
         volumePot.setVoltageRatioChangeTrigger(0.05)
         volumePot.setOnVoltageRatioChangeHandler(soundHandler)
+        barrierThingy = VI.setup(39830, 0, 0)
+        barrierThingy.setVoltageRatioChangeTrigger(0.05)
+        barrierThingy.setOnVoltageRatioChangeHandler(barrierHandler)
     if(RFIDtag and (rfid0 == None)):
         rfid0 = RF.setup(63514, 1)
         rfid0.lcd = lcd0
@@ -130,11 +134,6 @@ def onNewDevice(self, device):
         barrierMotor0 = RC.setup(14875, 1)
     if(SwingControl and (swingMotor0 == None)):
         swingMotor0 = RC.setup(19875, 1)
-    if(TouchConnected and (barrierThingy == None)):
-        barrierThingy = CT.setup(52930, 0)
-        #print(str(barrierThingy.getSensitivity()))
-        #barrierThingy.setTouchValueChangeTrigger(0.05)
-        barrierThingy.setOnTouchHandler(barrierHandler)
 
 
 def LCDupdater():
@@ -147,20 +146,23 @@ def LCDupdater():
         elif(lcdStatus["babeAccepted"] == 3):
             LCD.write(lcd0, "Nope.", "")
     else:
-        LCD.write(lcd0, lcdStatus["babyName"], str(lcdStatus["temperature"]) + " " + "Wet bed" if lcdStatus["isWet"] else "")
+        LCD.write(lcd0, lcdStatus["babyName"], str(lcdStatus["temperature"]) + " " + ("Wet bed" if lcdStatus["isWet"] else ""))
 
 def dictUpdate(self, key, value):
     global lcd0, leds, rfid0, barrierMotor0, swingMotor0
     global targetTemp, currentTemp
-    print(key)
     if (key == "swingPosition"):
-        RC.rotate180(swingMotor0, (int(value)*2)-1)
+        sPos = float(value)*2-1
+        sPos = min(sPos, 0.4)
+        sPos = max(sPos, -0.4)
+        RC.rotate180(swingMotor0, sPos)
     elif (key == "barrierPosition"):
         print("Hewo " + value)
         RC.rotate180(barrierMotor0, (float(value)*2)-1)
     elif (key == "targetTemperature"):
-        targetTemp = min(int(value), 30)
+        targetTemp = min((float(value)), 30)
         targetTemp = max(targetTemp, 20)
+        LED.setDistance(float(cribDict.get("currentTemperature"))-float(cribDict.get("targetTemperature")), leds)
     elif (key == "currentTemperature"):
         currentTemp = int(value)
         lcdStatus["temperature"] = currentTemp

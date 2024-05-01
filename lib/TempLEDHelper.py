@@ -43,7 +43,7 @@ def setDistance(dist, leds):
         ledR.setDutyCycle(1)
         ledG.setDutyCycle(0)
         ledB.setDutyCycle(0)
-    elif (dist > 0.75 and dist <= 1.0):
+    elif (dist > 0.75):
         ledR.setDutyCycle(1)
         ledG.setDutyCycle(0)
         ledB.setDutyCycle(0)
@@ -59,7 +59,7 @@ def setDistance(dist, leds):
         ledR.setDutyCycle(0)
         ledG.setDutyCycle(0)
         ledB.setDutyCycle(1)
-    elif (dist < 0.75 and dist >= -1.0):
+    elif (dist < 0.75):
         ledR.setDutyCycle(0)
         ledG.setDutyCycle(0)
         ledB.setDutyCycle(1)
