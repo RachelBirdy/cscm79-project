@@ -15,6 +15,7 @@ RFIDtag = False
 BarrierControl = False
 SwingControl = False
 LCDConnected = False
+TouchConnected = False
 
 lcd0 = None
 leds = None
@@ -26,6 +27,7 @@ volumePot = None
 rfid0 = None
 barrierMotor0 = None
 swingMotor0 = None
+capacitiveTouch0 = None
 
 RGBpins = {
     "Red": 7,
@@ -41,9 +43,17 @@ babyDict = {
 targetTemp = 25
 currentTemp = 25
 
+lcdStatus = {
+    "babyName":"",
+    "temperature":25,
+    "isWet":False,
+    "newBaby":False,
+    "babyAccepted":None
+}
 
 def tagHandler(self, tag, protocol):
     global cribDict
+    global lcdStatus
     if (cribDict.get("newBaby") == str(False)):
         if (babyDict.get(tag)):
             cribDict.set("babyName", babyDict.get(tag))
@@ -56,25 +66,30 @@ def tagHandler(self, tag, protocol):
         cribDict.set("newBaby", str(False))
         sleep(0.5)
         cribDict.set("newBabyAccepted", str(False))
-        global lcdStatus
         lcdStatus[""]
     return
 
 def tempHandler(self, voltage):
     global cribDict
     cribDict.set("currentTemperature", str(10 + (voltage * 25)))
+    lcdStatus["temperature"] = 10 + (voltage*25)
+    LCDupdater()
 
 def swingHandler(self, voltage):
-    global cribDict
+    global cribDict, swingMotor0
     cribDict.set("swingPosition", str(voltage))
+    RC.rotate180(swingMotor0, (int(voltage)*2)-1)
 
 def barrierHandler(self, voltage):
-    global cribDict
+    global cribDict, barrierMotor0
     cribDict.set("barrierPosition", str(voltage))
+    RC.rotate180(barrierMotor0, (int(voltage)*2)-1)
 
 def wetHandler(self, voltage):
     global cribDict
     cribDict.set("isWet", str(True) if voltage > 0.7 else str(False))
+    lcdStatus["isWet"] = True if voltage > 0.7 else False
+    LCDupdater()
 
 def soundHandler(self, voltage):
     global cribDict
@@ -82,13 +97,14 @@ def soundHandler(self, voltage):
 
 def onNewDevice(self, device):
     global lcd0, leds, rfid0, barrierMotor0, swingMotor0
-    global tempSlider, swingJoystick, barrierThingy, wetSlider, volumePot
-    global TempControl, RFIDtag, BarrierControl, SwingControl, LCDConnected
+    global tempSlider, swingJoystick, barrierThingy, wetSlider, volumePot, capacitiveTouch0
+    global TempControl, RFIDtag, BarrierControl, SwingControl, LCDConnected, TouchConnected
     print("Device: " + str(device))
     if (device.getDeviceSerialNumber() == 39830): LCDConnected = True
     if (device.getDeviceSerialNumber() == 63514): RFIDtag = True
     if (device.getDeviceSerialNumber() == 14875): BarrierControl = True
     if (device.getDeviceSerialNumber() == 19875): SwingControl = True
+    if (device.getDeviceSerialNumber() == 52930): TouchConnected = True
     if(LCDConnected and (lcd0 == None)):
         lcd0 = LCD.setup(39830, 0)
         leds = LED.setup(39830, 7, 6, 5, 0)
@@ -98,9 +114,6 @@ def onNewDevice(self, device):
         swingJoystick = VI.setup(39830, 1, 0)
         swingJoystick.setVoltageRatioChangeTrigger(0.05)
         swingJoystick.setOnVoltageRatioChangeHandler(swingHandler)
-        barrierThingy = CT.setup(39830, 0)
-        barrierThingy.setTouchValueChangeTrigger(0.05)
-        barrierThingy.setOnTouchHandler(barrierHandler)
         wetSlider = VI.setup(39830, 3, 0)
         wetSlider.setVoltageRatioChangeTrigger(0.1)
         wetSlider.setOnVoltageRatioChangeHandler(wetHandler)
@@ -114,17 +127,15 @@ def onNewDevice(self, device):
         global waitingForNewBaby 
         waitingForNewBaby = False
     if(BarrierControl and (barrierMotor0 == None)):
-        barrierMotor0 = RC.setup(19875, 1)
+        barrierMotor0 = RC.setup(14875, 1)
     if(SwingControl and (swingMotor0 == None)):
-        swingMotor0 = RC.setup(14875, 1)
+        swingMotor0 = RC.setup(19875, 1)
+    if(TouchConnected and (barrierThingy == None)):
+        barrierThingy = CT.setup(52930, 0)
+        #print(str(barrierThingy.getSensitivity()))
+        #barrierThingy.setTouchValueChangeTrigger(0.05)
+        barrierThingy.setOnTouchHandler(barrierHandler)
 
-lcdStatus = {
-    "babyName":"",
-    "temperature":25,
-    "isWet":False,
-    "newBaby":False,
-    "babyAccepted":None
-}
 
 def LCDupdater():
     global lcdStatus, lcd0
@@ -141,10 +152,12 @@ def LCDupdater():
 def dictUpdate(self, key, value):
     global lcd0, leds, rfid0, barrierMotor0, swingMotor0
     global targetTemp, currentTemp
+    print(key)
     if (key == "swingPosition"):
         RC.rotate180(swingMotor0, (int(value)*2)-1)
     elif (key == "barrierPosition"):
-        RC.rotate180(barrierMotor0, (int(value)*2)-1)
+        print("Hewo " + value)
+        RC.rotate180(barrierMotor0, (float(value)*2)-1)
     elif (key == "targetTemperature"):
         targetTemp = min(int(value), 30)
         targetTemp = max(targetTemp, 20)
@@ -161,9 +174,7 @@ def dictUpdate(self, key, value):
     elif (key == "newBabyAccepted"):
         lcdStatus["babyAccepted"] = int(value)
         LCDupdater()
-    elif (key == "isWet"):
-        lcdStatus["isWet"] = bool(value)
-        LCDupdater()     
+    
 
 def main():
 
@@ -172,7 +183,7 @@ def main():
     Net.enableServerDiscovery(PhidgetServerType.PHIDGETSERVER_DEVICEREMOTE)
     sleep(5)
     manager = Manager()
-    manager.setOnAttachHandle(onNewDevice)
+    manager.setOnAttachHandler(onNewDevice)
     manager.open()
     cribDict = Dictionary()
     cribDict.setDeviceLabel("Crib")
@@ -181,6 +192,6 @@ def main():
     cribDict.setOnUpdateHandler(dictUpdate)
 
     while(True):
-        time.sleep(1)
+        sleep(1)
 
 main()
