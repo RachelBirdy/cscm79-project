@@ -104,7 +104,7 @@ def onNewDevice(self, device):
         wetSlider = VI.setup(39830, 3, 0)
         wetSlider.setVoltageRatioChangeTrigger(0.1)
         wetSlider.setOnVoltageRatioChangeHandler(wetHandler)
-        volumePot = VI.setup(39830, 4, 0)
+        volumePot = VI.setup(39830, 2, 0)
         volumePot.setVoltageRatioChangeTrigger(0.05)
         volumePot.setOnVoltageRatioChangeHandler(soundHandler)
     if(RFIDtag and (rfid0 == None)):
@@ -169,7 +169,6 @@ def main():
 
     global cribDict
     net = Net()
-    net.setOnServerAddedHandler(onServerAdded)
     Net.enableServerDiscovery(PhidgetServerType.PHIDGETSERVER_DEVICEREMOTE)
     sleep(5)
     manager = Manager()
