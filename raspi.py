@@ -184,14 +184,15 @@ def main():
     net = Net()
     Net.enableServerDiscovery(PhidgetServerType.PHIDGETSERVER_DEVICEREMOTE)
     sleep(5)
-    manager = Manager()
-    manager.setOnAttachHandler(onNewDevice)
-    manager.open()
     cribDict = Dictionary()
     cribDict.setDeviceLabel("Crib")
     cribDict.setDeviceSerialNumber(1000)
     cribDict.openWaitForAttachment(1000)
     cribDict.setOnUpdateHandler(dictUpdate)
+    manager = Manager()
+    manager.setOnAttachHandler(onNewDevice)
+    manager.open()
+    
 
     while(True):
         sleep(1)
